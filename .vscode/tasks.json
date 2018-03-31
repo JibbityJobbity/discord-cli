@@ -12,11 +12,13 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "build",
+            "label": "build (Release)",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "build",
+                "-c",
+                "Release",
                 "${workspaceFolder}/discord-cli.csproj"
             ],
             "problemMatcher": "$msCompile"

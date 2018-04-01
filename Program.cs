@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 using Discord;
 using Discord.WebSocket;
 
@@ -8,8 +11,9 @@ namespace discord_cli
 {
     class Program
     {
+        string prefix = ";";
         SocketGuild currentGuild;
-        SocketChannel currentChannel;
+        ISocketMessageChannel currentChannel;
         DiscordSocketClient client = new DiscordSocketClient();
 
         public static void Main(string[] args)
@@ -39,7 +43,7 @@ namespace discord_cli
             await Task.Delay(-1);
         }
 
-        Task Connected()
+        async Task Connected()
         {
             string input;
             string[] inputComponents;
@@ -60,51 +64,68 @@ namespace discord_cli
                 {
                     arguments[i] = inputComponents[i + 1];
                 }
-                switch (command)
+                if (command.StartsWith(prefix))
                 {
-                    case "exit":
+                    if (command == prefix + "exit")
                         Environment.Exit(0);
-                    break;
-                    case "list":
+                    else if (command == prefix + "list")
                     {
-                        int i = 1;
-                        foreach (SocketGuild guild in client.Guilds)
+                        if (arguments[0] == "servers")
                         {
-                            Console.WriteLine("[" + i + "] " + guild.Name);
-                            i++;
-                        }
-                    }
-                    break;
-                    case "list channels":
-                    {
-                        int i = 1;
-                        try
-                        {
-                            foreach (SocketChannel channel in currentGuild.Channels)
+                            int i = 1;
+                            foreach (SocketGuild guild in client.Guilds)
                             {
-                                Console.WriteLine("[" + i + "] " + channel);
+                                Console.WriteLine("[" + i + "] " + guild.Name);
                                 i++;
                             }
                         }
-                        catch
+                        else if (arguments[0] == "channels")
                         {
-                            Console.WriteLine("No guild selected, type \"help\" for information");
+                            try
+                            {
+                                for (int i = 0; i < currentGuild.TextChannels.Count; i++)
+                                {
+                                    Console.WriteLine("[" + (i + 1) + "] " + ((ISocketMessageChannel)currentGuild.TextChannels.Skip(i).First()).Name);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                                Console.WriteLine("No server selected.");
+                                Console.WriteLine("Enter \"list servers\" then \"select server <server number>");
+                            }
                         }
                     }
-                    break;
-                    case "select":
+                    else if (command == prefix + "select")
                     {
-
+                        int selection;
+                        if (!int.TryParse(arguments[1], out selection))
+                        {
+                            Console.WriteLine("Invalid server selection.");
+                            Console.WriteLine("Usage: select server <server number>");
+                        }
+                        if (arguments[0] == "server")
+                        {
+                            currentGuild = client.Guilds.Skip(selection - 1).First();
+                            Console.WriteLine("Selected " + currentGuild.Name);
+                        }
+                        else if (arguments[0] == "channel")
+                        {
+                            currentChannel = currentGuild.TextChannels.Skip(selection - 1).First();
+                            Console.WriteLine("Selected " + currentChannel.Name);
+                        }
                     }
-                    break;
                 }
+                else
+                    await currentChannel.SendMessageAsync(input);
             }
-            return Task.CompletedTask;
+            return;
         }
 
         Task MessageReceived(SocketMessage message)
         {
-            Console.WriteLine(message.Author.Username + "#" + message.Author.Discriminator + ": " + message.Content);
+            if (message.Channel == currentChannel)
+                Console.WriteLine(message.Author.Username + "#" + message.Author.Discriminator + ": " + message.Content);
             return Task.CompletedTask;
         }
     }

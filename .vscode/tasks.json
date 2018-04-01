@@ -18,8 +18,8 @@
             "type": "process",
             "args": [
                 "build",
-                "-c",
-                "Release",
+                "-r",
+                "win10-x64",
                 "${workspaceFolder}/discord-cli.csproj"
             ],
             "problemMatcher": "$msCompile",
